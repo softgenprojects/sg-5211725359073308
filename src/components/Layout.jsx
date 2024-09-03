@@ -27,11 +27,11 @@ export default function Layout({ children }) {
         <meta name="description" content="Optimize your cloud spend with Wring.co" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className="flex h-screen bg-background">
+      <div className="flex h-screen bg-white">
         {/* Sidebar */}
-        <aside className={`bg-primary text-primary-foreground w-64 min-h-screen p-4 ${sidebarOpen ? 'block' : 'hidden'} md:block`}>
+        <aside className={`bg-gray-100 w-64 min-h-screen p-4 ${sidebarOpen ? 'block' : 'hidden'} md:block`}>
           <div className="flex justify-between items-center mb-6">
-            <Link href="/" className="text-xl font-bold">Wring.co</Link>
+            <Link href="/" className="text-xl font-bold text-gray-800">Wring.co</Link>
             <button onClick={() => setSidebarOpen(false)} className="md:hidden">
               <Menu size={24} />
             </button>
@@ -41,8 +41,8 @@ export default function Layout({ children }) {
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center space-x-2 p-2 rounded hover:bg-primary-foreground hover:text-primary mb-2 ${
-                  isActive(href) ? 'bg-primary-foreground text-primary' : ''
+                className={`flex items-center space-x-2 p-2 rounded-md mb-2 ${
+                  isActive(href) ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-200'
                 }`}
                 target={external ? "_blank" : "_self"}
                 rel={external ? "noopener noreferrer" : ""}
@@ -56,13 +56,13 @@ export default function Layout({ children }) {
 
         {/* Main content */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <header className="bg-primary text-primary-foreground p-4 md:hidden">
+          <header className="bg-white border-b border-gray-200 p-4 md:hidden">
             <button onClick={() => setSidebarOpen(true)}>
               <Menu size={24} />
             </button>
           </header>
           <ErrorBoundary>
-            <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background p-6">
+            <main className="flex-1 overflow-x-hidden overflow-y-auto bg-white p-6">
               {children}
             </main>
           </ErrorBoundary>
