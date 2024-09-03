@@ -3,13 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, DollarSign, Users } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function Dashboard({ user }) {
-  const [cloudSpendTrends, setCloudSpendTrends] = useState([]);
-  const [usageBreakdown, setUsageBreakdown] = useState([]);
+  const [dashboardData, setDashboardData] = useState(null);
   const [timeFilter, setTimeFilter] = useState('6m');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,20 +17,12 @@ export default function Dashboard({ user }) {
     const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
-        const [trendsRes, usageRes] = await Promise.all([
-          fetch(`/api/cloudSpendTrends?timeFilter=${timeFilter}`),
-          fetch('/api/usageBreakdown')
-        ]);
-
-        if (!trendsRes.ok || !usageRes.ok) {
+        const res = await fetch(`/api/dashboardData?timeFilter=${timeFilter}`);
+        if (!res.ok) {
           throw new Error('Failed to fetch dashboard data');
         }
-
-        const trendsData = await trendsRes.json();
-        const usageData = await usageRes.json();
-
-        setCloudSpendTrends(trendsData);
-        setUsageBreakdown(usageData);
+        const data = await res.json();
+        setDashboardData(data);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -44,11 +35,16 @@ export default function Dashboard({ user }) {
 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
-  if (!user) return null;
+  if (!user || !dashboardData) return null;
 
-  const totalSavings = cloudSpendTrends.reduce((acc, curr) => acc + curr.wringSpend, 0);
-  const totalSpendWithoutWring = cloudSpendTrends.reduce((acc, curr) => acc + curr.spendWithoutWring, 0);
-  const savingsPercentage = ((totalSpendWithoutWring - totalSavings) / totalSpendWithoutWring * 100).toFixed(2);
+  const { 
+    cloudSpendTrends, 
+    totalSavings, 
+    savingsPercentage, 
+    employeeEquivalent,
+    yearToDateSavings,
+    usageBreakdown
+  } = dashboardData;
 
   return (
     <div className="container mx-auto p-6">
@@ -61,12 +57,46 @@ export default function Dashboard({ user }) {
         </AlertDescription>
       </Alert>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Cloud Spend Trends</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[400px]">
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex justify-between items-center">
+            <span>Savings Overview & Cloud Spend Trends</span>
+            <Select value={timeFilter} onValueChange={setTimeFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select time period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1m">Last Month</SelectItem>
+                <SelectItem value="3m">Last 3 Months</SelectItem>
+                <SelectItem value="6m">Last 6 Months</SelectItem>
+                <SelectItem value="1y">Last Year</SelectItem>
+              </SelectContent>
+            </Select>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="flex flex-col justify-center items-center bg-secondary rounded-lg p-4">
+              <DollarSign className="h-8 w-8 text-primary mb-2" />
+              <p className="text-sm text-muted-foreground">Total Savings</p>
+              <p className="text-2xl font-bold">${totalSavings.toLocaleString()}</p>
+            </div>
+            <div className="flex flex-col justify-center items-center bg-secondary rounded-lg p-4">
+              <ArrowUpRight className="h-8 w-8 text-green-500 mb-2" />
+              <p className="text-sm text-muted-foreground">Savings Percentage</p>
+              <p className="text-2xl font-bold">{savingsPercentage}%</p>
+            </div>
+            <div className="flex flex-col justify-center items-center bg-secondary rounded-lg p-4">
+              <Users className="h-8 w-8 text-blue-500 mb-2" />
+              <p className="text-sm text-muted-foreground">Employee Equivalent</p>
+              <p className="text-2xl font-bold">{employeeEquivalent}</p>
+            </div>
+          </div>
+          <div className="mb-6">
+            <p className="text-lg font-semibold mb-2">Year-To-Date Savings</p>
+            <p className="text-3xl font-bold">${yearToDateSavings.toLocaleString()}</p>
+          </div>
+          <div className="h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={cloudSpendTrends}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -79,34 +109,9 @@ export default function Dashboard({ user }) {
                 <Bar dataKey="wringSpend" stackId="a" fill="#ffc658" name="Wring Savings" />
               </BarChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Savings Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold mb-2">${totalSavings.toLocaleString()}</div>
-            <p className="text-muted-foreground mb-4">Total savings in the last {timeFilter}</p>
-            <div className="flex items-center text-green-500 mb-4">
-              <ArrowUpRight className="mr-2" />
-              <span className="text-lg font-semibold">{savingsPercentage}% savings</span>
-            </div>
-            <Select value={timeFilter} onValueChange={setTimeFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select time period" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1m">Last Month</SelectItem>
-                <SelectItem value="3m">Last 3 Months</SelectItem>
-                <SelectItem value="6m">Last 6 Months</SelectItem>
-                <SelectItem value="1y">Last Year</SelectItem>
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
