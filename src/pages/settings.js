@@ -23,6 +23,8 @@ export default function Settings() {
     name: '',
     address: '',
     taxId: '',
+    managingDirector: '',
+    email: '',
   });
 
   const handleEditMember = (member) => {
@@ -113,6 +115,14 @@ export default function Settings() {
               <div>
                 <Label htmlFor="taxId">Tax ID</Label>
                 <Input id="taxId" name="taxId" value={companyInfo.taxId} onChange={handleCompanyInfoChange} />
+              </div>
+              <div>
+                <Label htmlFor="managingDirector">Managing Director</Label>
+                <Input id="managingDirector" name="managingDirector" value={companyInfo.managingDirector} onChange={handleCompanyInfoChange} />
+              </div>
+              <div>
+                <Label htmlFor="companyEmail">Company Email</Label>
+                <Input id="companyEmail" name="email" type="email" value={companyInfo.email} onChange={handleCompanyInfoChange} />
               </div>
               <Button onClick={handleSaveCompanyInfo}>Save Company Information</Button>
             </form>

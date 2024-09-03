@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from '@/components/ui/use-toast';
 
 export default function PayoutModal({ isOpen, onClose, totalEarnings }) {
-  const [payoutMethod, setPayoutMethod] = useState('bankTransfer');
+  const [payoutMethod, setPayoutMethod] = useState('awsCredits');
   const [accountDetails, setAccountDetails] = useState('');
 
   const handlePayout = async (e) => {
@@ -45,26 +45,29 @@ export default function PayoutModal({ isOpen, onClose, totalEarnings }) {
             </div>
             <RadioGroup value={payoutMethod} onValueChange={setPayoutMethod}>
               <div className="flex items-center space-x-2">
+                <RadioGroupItem value="awsCredits" id="awsCredits" />
+                <Label htmlFor="awsCredits">AWS Wring Credits</Label>
+              </div>
+              <div className="flex items-center space-x-2">
                 <RadioGroupItem value="bankTransfer" id="bankTransfer" />
                 <Label htmlFor="bankTransfer">Bank Transfer</Label>
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="paypal" id="paypal" />
-                <Label htmlFor="paypal">PayPal</Label>
-              </div>
             </RadioGroup>
-            <div>
-              <Label htmlFor="accountDetails">
-                {payoutMethod === 'bankTransfer' ? 'Bank Account Details' : 'PayPal Email'}
-              </Label>
-              <Input
-                id="accountDetails"
-                value={accountDetails}
-                onChange={(e) => setAccountDetails(e.target.value)}
-                placeholder={payoutMethod === 'bankTransfer' ? 'Enter your bank details' : 'Enter your PayPal email'}
-                required
-              />
-            </div>
+            {payoutMethod === 'bankTransfer' && (
+              <div>
+                <Label htmlFor="accountDetails">Bank Account Details</Label>
+                <Input
+                  id="accountDetails"
+                  value={accountDetails}
+                  onChange={(e) => setAccountDetails(e.target.value)}
+                  placeholder="Enter your bank account details"
+                  required
+                />
+              </div>
+            )}
+            {payoutMethod === 'awsCredits' && (
+              <p>Your AWS Wring Credits will be applied to your account automatically.</p>
+            )}
           </div>
           <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
