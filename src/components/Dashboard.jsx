@@ -2,36 +2,53 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { ArrowUpRight, DollarSign, Users } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { ArrowUpRight } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-export default function Dashboard({ user, cloudSpendTrends }) {
-  const [isLoading, setIsLoading] = useState(true);
+export default function Dashboard({ user }) {
+  const [cloudSpendTrends, setCloudSpendTrends] = useState([]);
   const [usageBreakdown, setUsageBreakdown] = useState([]);
+  const [timeFilter, setTimeFilter] = useState('6m');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchUsageBreakdown = async () => {
+    const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('/api/usageBreakdown');
-        const data = await response.json();
-        setUsageBreakdown(data);
-      } catch (error) {
-        console.error('Error fetching usage breakdown:', error);
+        const [trendsRes, usageRes] = await Promise.all([
+          fetch(`/api/cloudSpendTrends?timeFilter=${timeFilter}`),
+          fetch('/api/usageBreakdown')
+        ]);
+
+        if (!trendsRes.ok || !usageRes.ok) {
+          throw new Error('Failed to fetch dashboard data');
+        }
+
+        const trendsData = await trendsRes.json();
+        const usageData = await usageRes.json();
+
+        setCloudSpendTrends(trendsData);
+        setUsageBreakdown(usageData);
+      } catch (err) {
+        setError(err.message);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchUsageBreakdown();
-  }, []);
+    fetchDashboardData();
+  }, [timeFilter]);
 
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
   if (!user) return null;
 
-  const totalSavings = user.savings * 6;
-  const savingsPercentage = 15; // This should be calculated based on actual data
-  const employeesEquivalent = Math.floor(totalSavings / 5000);
+  const totalSavings = cloudSpendTrends.reduce((acc, curr) => acc + curr.wringSpend, 0);
+  const totalSpendWithoutWring = cloudSpendTrends.reduce((acc, curr) => acc + curr.spendWithoutWring, 0);
+  const savingsPercentage = ((totalSpendWithoutWring - totalSavings) / totalSpendWithoutWring * 100).toFixed(2);
 
   return (
     <div className="container mx-auto p-6">
@@ -40,7 +57,7 @@ export default function Dashboard({ user, cloudSpendTrends }) {
       <Alert className="mb-6">
         <AlertTitle className="text-xl">Hello {user.name},</AlertTitle>
         <AlertDescription>
-          You have saved ${user.savings.toLocaleString()} since you have logged in.
+          You have saved ${totalSavings.toLocaleString()} since you have logged in.
         </AlertDescription>
       </Alert>
 
@@ -49,15 +66,18 @@ export default function Dashboard({ user, cloudSpendTrends }) {
           <CardHeader>
             <CardTitle>Cloud Spend Trends</CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px]">
+          <CardContent className="h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={cloudSpendTrends}>
+              <BarChart data={cloudSpendTrends}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
-                <Line type="monotone" dataKey="spend" stroke="#8884d8" />
-              </LineChart>
+                <Legend />
+                <Bar dataKey="actualCost" stackId="a" fill="#8884d8" name="Actual Cost" />
+                <Bar dataKey="spendWithoutWring" stackId="a" fill="#82ca9d" name="Spend Without Wring" />
+                <Bar dataKey="wringSpend" stackId="a" fill="#ffc658" name="Wring Savings" />
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
@@ -68,51 +88,59 @@ export default function Dashboard({ user, cloudSpendTrends }) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold mb-2">${totalSavings.toLocaleString()}</div>
-            <p className="text-muted-foreground mb-4">Total savings in the last 6 months</p>
+            <p className="text-muted-foreground mb-4">Total savings in the last {timeFilter}</p>
             <div className="flex items-center text-green-500 mb-4">
               <ArrowUpRight className="mr-2" />
-              <span className="text-lg font-semibold">{savingsPercentage}% increase</span>
+              <span className="text-lg font-semibold">{savingsPercentage}% savings</span>
             </div>
-            <p className="text-muted-foreground">
-              This is equivalent to hiring {employeesEquivalent} new employees!
-            </p>
+            <Select value={timeFilter} onValueChange={setTimeFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select time period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1m">Last Month</SelectItem>
+                <SelectItem value="3m">Last 3 Months</SelectItem>
+                <SelectItem value="6m">Last 6 Months</SelectItem>
+                <SelectItem value="1y">Last Year</SelectItem>
+              </SelectContent>
+            </Select>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="mb-6">
+      <Card>
         <CardHeader>
           <CardTitle>Usage Breakdown</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {isLoading ? (
-              Array(3).fill().map((_, index) => (
-                <Skeleton key={index} className="h-20 w-full" />
-              ))
-            ) : (
-              usageBreakdown.map(({ service, cost }) => (
-                <div key={service} className="flex items-center justify-between p-4 bg-secondary rounded-lg">
-                  <span className="font-semibold">{service}</span>
-                  <span className="text-lg">${cost.toLocaleString()}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Cost Optimization Recommendations</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="list-disc pl-5 space-y-2">
-            <li>Right-size your EC2 instances to save up to 30%</li>
-            <li>Utilize Reserved Instances for predictable workloads</li>
-            <li>Implement auto-scaling to optimize resource usage</li>
-          </ul>
-          <Button className="mt-4">View All Recommendations</Button>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Subscription Id</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Term</TableHead>
+                <TableHead>End Date</TableHead>
+                <TableHead>Qty</TableHead>
+                <TableHead>Regions</TableHead>
+                <TableHead>Purchaser</TableHead>
+                <TableHead>Discount Rate</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {usageBreakdown.map((item, index) => (
+                <TableRow key={index}>
+                  <TableCell>{item.subscriptionId}</TableCell>
+                  <TableCell>{item.type}</TableCell>
+                  <TableCell>{item.term}</TableCell>
+                  <TableCell>{item.endDate}</TableCell>
+                  <TableCell>{item.qty}</TableCell>
+                  <TableCell>{item.regions}</TableCell>
+                  <TableCell>{item.purchaser}</TableCell>
+                  <TableCell>{item.discountRate}%</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>
