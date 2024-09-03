@@ -1,43 +1,140 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Progress } from '@/components/ui/progress';
 import { toast } from '@/components/ui/use-toast';
+import { Clipboard, Share2, DollarSign, Users } from 'lucide-react';
 
 export default function Referral() {
   const [email, setEmail] = useState('');
   const [rewardChoice, setRewardChoice] = useState('credits');
+  const [referralStats, setReferralStats] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleInvite = (e) => {
+  useEffect(() => {
+    const fetchReferralStats = async () => {
+      setIsLoading(true);
+      try {
+        const res = await fetch('/api/referralStats');
+        if (!res.ok) {
+          throw new Error('Failed to fetch referral stats');
+        }
+        const data = await res.json();
+        setReferralStats(data);
+      } catch (error) {
+        console.error('Error fetching referral stats:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load referral statistics. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchReferralStats();
+  }, []);
+
+  const handleInvite = async (e) => {
     e.preventDefault();
-    // Simulating invite process
-    toast({
-      title: "Invitation Sent!",
-      description: `An invitation has been sent to ${email}.`,
-    });
-    setEmail('');
+    try {
+      const res = await fetch('/api/sendInvite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) throw new Error('Failed to send invitation');
+      toast({
+        title: "Invitation Sent!",
+        description: `An invitation has been sent to ${email}.`,
+      });
+      setEmail('');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send invitation. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText("https://wring.co/ref/yourUniqueCode")
+      .then(() => {
+        toast({
+          title: "Link Copied!",
+          description: "Your referral link has been copied to the clipboard.",
+        });
+      })
+      .catch(() => {
+        toast({
+          title: "Error",
+          description: "Failed to copy link. Please try again.",
+          variant: "destructive",
+        });
+      });
+  };
+
+  const handleShareLinkedIn = () => {
+    const url = encodeURIComponent("https://wring.co/ref/yourUniqueCode");
+    const title = encodeURIComponent("Join me on Wring.co and optimize your cloud costs!");
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}&title=${title}`, '_blank');
+  };
+
+  if (isLoading) {
+    return <Layout><div className="container mx-auto p-6">Loading...</div></Layout>;
+  }
 
   return (
     <Layout>
-      <div className="container mx-auto">
+      <div className="container mx-auto p-6">
         <h1 className="text-4xl font-bold mb-6">Referral Program</h1>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Referral Stats</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center">
+                  <Users className="mr-2" />
+                  <span>People Referred</span>
+                </div>
+                <span className="text-2xl font-bold">{referralStats.peopleReferred}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <DollarSign className="mr-2" />
+                  <span>Total Earnings</span>
+                </div>
+                <span className="text-2xl font-bold">${referralStats.totalEarnings}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Next Milestone</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4">
+                <p className="mb-2">Progress to {referralStats.nextMilestone.name}</p>
+                <Progress value={referralStats.nextMilestone.progress} className="w-full" />
+              </div>
+              <p>{referralStats.nextMilestone.description}</p>
+            </CardContent>
+          </Card>
+        </div>
         
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>How It Works</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>Invite your friends and colleagues to Wring.co and earn rewards when they start saving!</p>
-          </CardContent>
-        </Card>
-
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Invite via Email</CardTitle>
+            <CardTitle>Invite Friends</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleInvite} className="space-y-4">
@@ -57,12 +154,14 @@ export default function Referral() {
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Invite via Link</CardTitle>
+            <CardTitle>Your Referral Link</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="mb-2">Share this unique link with your network:</p>
-            <Input value="https://wring.co/ref/yourUniqueCode" readOnly />
-            <Button className="mt-2">Copy Link</Button>
+            <div className="flex items-center space-x-2 mb-4">
+              <Input value="https://wring.co/ref/yourUniqueCode" readOnly />
+              <Button onClick={handleCopyLink}><Clipboard className="mr-2" /> Copy</Button>
+            </div>
+            <Button onClick={handleShareLinkedIn}><Share2 className="mr-2" /> Share on LinkedIn</Button>
           </CardContent>
         </Card>
 
@@ -71,9 +170,18 @@ export default function Referral() {
             <CardTitle>Saving Milestones</CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="list-disc pl-5 space-y-2">
-              <li>$1,000 in savings: Receive a branded mug or 1K credits</li>
-              <li>$10,000 in savings: Earn a billboard ad in Times Square</li>
+            <ul className="space-y-4">
+              {referralStats.milestones.map((milestone, index) => (
+                <li key={index} className="flex items-center">
+                  <div className="w-1/2">
+                    <p className="font-semibold">{milestone.name}</p>
+                    <p className="text-sm text-muted-foreground">{milestone.description}</p>
+                  </div>
+                  <div className="w-1/2">
+                    <Progress value={milestone.progress} className="w-full" />
+                  </div>
+                </li>
+              ))}
             </ul>
           </CardContent>
         </Card>
@@ -93,6 +201,9 @@ export default function Referral() {
                 <Label htmlFor="cash">Cash Payout</Label>
               </div>
             </RadioGroup>
+            <Button className="mt-4" onClick={() => toast({ title: "Payout Option Saved", description: `Your payout option has been set to ${rewardChoice}.` })}>
+              Save Payout Option
+            </Button>
           </CardContent>
         </Card>
       </div>
