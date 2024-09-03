@@ -4,16 +4,7 @@ import { Button } from '@/components/ui/button';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ArrowUpRight, DollarSign, Users } from 'lucide-react';
 
-const data = [
-  { name: 'Jan', spend: 4000 },
-  { name: 'Feb', spend: 3000 },
-  { name: 'Mar', spend: 2000 },
-  { name: 'Apr', spend: 2780 },
-  { name: 'May', spend: 1890 },
-  { name: 'Jun', spend: 2390 },
-];
-
-export default function Dashboard({ user }) {
+export default function Dashboard({ user, cloudSpendTrends }) {
   if (!user) return null;
 
   return (
@@ -34,7 +25,7 @@ export default function Dashboard({ user }) {
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data}>
+              <LineChart data={cloudSpendTrends}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
