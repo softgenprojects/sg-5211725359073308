@@ -10,19 +10,25 @@ export default function handler(req, res) {
     },
     milestones: [
       {
+        id: 1,
         name: "$1,000 in Savings",
         description: "Receive a branded mug or 1K credits",
-        progress: 75
+        progress: 75,
+        claimed: false
       },
       {
+        id: 2,
         name: "$5,000 in Savings",
         description: "Get a $100 Amazon gift card",
-        progress: 40
+        progress: 40,
+        claimed: false
       },
       {
+        id: 3,
         name: "$10,000 in Savings",
         description: "Earn a billboard ad in Times Square",
-        progress: 20
+        progress: 20,
+        claimed: false
       }
     ]
   };

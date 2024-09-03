@@ -3,17 +3,16 @@ import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/components/ui/use-toast';
 import { Clipboard, Share2, DollarSign, Users } from 'lucide-react';
+import PayoutModal from '@/components/PayoutModal';
 
 export default function Referral() {
   const [email, setEmail] = useState('');
-  const [rewardChoice, setRewardChoice] = useState('credits');
   const [referralStats, setReferralStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchReferralStats = async () => {
@@ -86,6 +85,30 @@ export default function Referral() {
     window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}&title=${title}`, '_blank');
   };
 
+  const handleClaimMilestone = async (milestoneId) => {
+    try {
+      const res = await fetch('/api/claimMilestone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ milestoneId }),
+      });
+      if (!res.ok) throw new Error('Failed to claim milestone');
+      toast({
+        title: "Milestone Claimed!",
+        description: "Your reward has been successfully claimed.",
+      });
+      // Refresh referral stats after claiming
+      const updatedStats = await fetch('/api/referralStats').then(res => res.json());
+      setReferralStats(updatedStats);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to claim milestone. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return <Layout><div className="container mx-auto p-6">Loading...</div></Layout>;
   }
@@ -108,13 +131,14 @@ export default function Referral() {
                 </div>
                 <span className="text-2xl font-bold">{referralStats.peopleReferred}</span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center">
                   <DollarSign className="mr-2" />
                   <span>Total Earnings</span>
                 </div>
                 <span className="text-2xl font-bold">${referralStats.totalEarnings}</span>
               </div>
+              <Button onClick={() => setIsPayoutModalOpen(true)}>PAYOUT</Button>
             </CardContent>
           </Card>
 
@@ -171,42 +195,31 @@ export default function Referral() {
           </CardHeader>
           <CardContent>
             <ul className="space-y-4">
-              {referralStats.milestones.map((milestone, index) => (
-                <li key={index} className="flex items-center">
-                  <div className="w-1/2">
+              {referralStats.milestones.map((milestone) => (
+                <li key={milestone.id} className="flex items-center justify-between">
+                  <div className="w-2/3">
                     <p className="font-semibold">{milestone.name}</p>
                     <p className="text-sm text-muted-foreground">{milestone.description}</p>
+                    <Progress value={milestone.progress} className="w-full mt-2" />
                   </div>
-                  <div className="w-1/2">
-                    <Progress value={milestone.progress} className="w-full" />
-                  </div>
+                  <Button
+                    onClick={() => handleClaimMilestone(milestone.id)}
+                    disabled={milestone.progress < 100 || milestone.claimed}
+                  >
+                    {milestone.claimed ? 'Claimed' : 'Claim'}
+                  </Button>
                 </li>
               ))}
             </ul>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Payout Options</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RadioGroup value={rewardChoice} onValueChange={setRewardChoice}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="credits" id="credits" />
-                <Label htmlFor="credits">Wring.co Credits</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="cash" id="cash" />
-                <Label htmlFor="cash">Cash Payout</Label>
-              </div>
-            </RadioGroup>
-            <Button className="mt-4" onClick={() => toast({ title: "Payout Option Saved", description: `Your payout option has been set to ${rewardChoice}.` })}>
-              Save Payout Option
-            </Button>
-          </CardContent>
-        </Card>
       </div>
+
+      <PayoutModal
+        isOpen={isPayoutModalOpen}
+        onClose={() => setIsPayoutModalOpen(false)}
+        totalEarnings={referralStats.totalEarnings}
+      />
     </Layout>
   );
 }
