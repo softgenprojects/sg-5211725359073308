@@ -10,10 +10,8 @@ export function UserProvider({ children }) {
     // Fetch user data from API or local storage
     const fetchUser = async () => {
       try {
-        // Replace with actual API call
-        const response = await fetch('/api/user');
-        const userData = await response.json();
-        setUser(userData);
+        // For now, we'll just set a mock user
+        setUser({ name: 'John Doe', email: 'john@example.com' });
       } catch (error) {
         console.error('Error fetching user data:', error);
       } finally {
