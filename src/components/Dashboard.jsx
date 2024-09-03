@@ -1,10 +1,32 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ArrowUpRight, DollarSign, Users } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Dashboard({ user, cloudSpendTrends }) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [usageBreakdown, setUsageBreakdown] = useState([]);
+
+  useEffect(() => {
+    // Simulate API call for usage breakdown
+    const fetchUsageBreakdown = async () => {
+      setIsLoading(true);
+      // Simulating API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setUsageBreakdown([
+        { service: 'EC2', cost: Math.floor(Math.random() * 1000) },
+        { service: 'RDS', cost: Math.floor(Math.random() * 1000) },
+        { service: 'S3', cost: Math.floor(Math.random() * 1000) },
+      ]);
+      setIsLoading(false);
+    };
+
+    fetchUsageBreakdown();
+  }, []);
+
   if (!user) return null;
 
   return (
@@ -60,12 +82,18 @@ export default function Dashboard({ user, cloudSpendTrends }) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {['EC2', 'RDS', 'S3'].map((service) => (
-              <div key={service} className="flex items-center justify-between p-4 bg-secondary rounded-lg">
-                <span className="font-semibold">{service}</span>
-                <span className="text-lg">${Math.floor(Math.random() * 1000).toLocaleString()}</span>
-              </div>
-            ))}
+            {isLoading ? (
+              Array(3).fill().map((_, index) => (
+                <Skeleton key={index} className="h-20 w-full" />
+              ))
+            ) : (
+              usageBreakdown.map(({ service, cost }) => (
+                <div key={service} className="flex items-center justify-between p-4 bg-secondary rounded-lg">
+                  <span className="font-semibold">{service}</span>
+                  <span className="text-lg">${cost.toLocaleString()}</span>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
