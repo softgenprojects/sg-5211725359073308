@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from '@/components/ui/use-toast';
 
 export default function Settings() {
@@ -12,42 +13,18 @@ export default function Settings() {
     { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Admin' },
     { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'Member' },
   ]);
-  const [newMember, setNewMember] = useState({ name: '', email: '', role: 'Member' });
-  const [billingInfo, setBillingInfo] = useState({
-    cardNumber: '**** **** **** 1234',
-    expiryDate: '12/24',
-    cvv: '***',
-  });
-  const [notifications, setNotifications] = useState({
-    email: true,
-    push: false,
-  });
 
-  const handleAddMember = (e) => {
-    e.preventDefault();
-    setTeamMembers([...teamMembers, { ...newMember, id: Date.now() }]);
-    setNewMember({ name: '', email: '', role: 'Member' });
-    toast({
-      title: "Team Member Added",
-      description: `${newMember.name} has been added to your team.`,
-    });
-  };
-
-  const handleUpdateBilling = (e) => {
-    e.preventDefault();
-    // Simulating API call to update billing info
-    toast({
-      title: "Billing Information Updated",
-      description: "Your billing information has been successfully updated.",
-    });
-  };
+  const [integrations, setIntegrations] = useState([
+    { id: 1, name: 'Slack', connected: true },
+    { id: 2, name: 'GitHub', connected: false },
+    { id: 3, name: 'Jira', connected: false },
+  ]);
 
   const handleDeleteAccount = () => {
-    // Simulating account deletion process
+    // Implement account deletion logic here
     toast({
-      title: "Account Deleted",
-      description: "Your account has been successfully deleted.",
-      variant: "destructive",
+      title: "Account Deletion Requested",
+      description: "Your account deletion request has been submitted. We'll process it within 24 hours.",
     });
   };
 
@@ -61,33 +38,29 @@ export default function Settings() {
             <CardTitle>Team Management</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {teamMembers.map((member) => (
-                <div key={member.id} className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold">{member.name}</p>
-                    <p className="text-sm text-muted-foreground">{member.email}</p>
-                  </div>
-                  <span className="text-sm">{member.role}</span>
-                </div>
-              ))}
-            </div>
-            <form onSubmit={handleAddMember} className="mt-4 space-y-4">
-              <Input
-                placeholder="Name"
-                value={newMember.name}
-                onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
-                required
-              />
-              <Input
-                type="email"
-                placeholder="Email"
-                value={newMember.email}
-                onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
-                required
-              />
-              <Button type="submit">Add Team Member</Button>
-            </form>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {teamMembers.map((member) => (
+                  <TableRow key={member.id}>
+                    <TableCell>{member.name}</TableCell>
+                    <TableCell>{member.email}</TableCell>
+                    <TableCell>{member.role}</TableCell>
+                    <TableCell>
+                      <Button variant="outline" size="sm">Edit</Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <Button className="mt-4">Add Team Member</Button>
           </CardContent>
         </Card>
 
@@ -96,8 +69,17 @@ export default function Settings() {
             <CardTitle>Integrations</CardTitle>
           </CardHeader>
           <CardContent>
-            <p>Connect Wring.co with other tools and services.</p>
-            <Button className="mt-4">Manage Integrations</Button>
+            {integrations.map((integration) => (
+              <div key={integration.id} className="flex items-center justify-between py-2">
+                <span>{integration.name}</span>
+                <Switch
+                  checked={integration.connected}
+                  onCheckedChange={() => {
+                    // Implement integration toggle logic here
+                  }}
+                />
+              </div>
+            ))}
           </CardContent>
         </Card>
 
@@ -106,64 +88,52 @@ export default function Settings() {
             <CardTitle>Billing Information</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleUpdateBilling} className="space-y-4">
+            <form className="space-y-4">
               <div>
                 <Label htmlFor="cardNumber">Card Number</Label>
-                <Input
-                  id="cardNumber"
-                  value={billingInfo.cardNumber}
-                  onChange={(e) => setBillingInfo({ ...billingInfo, cardNumber: e.target.value })}
-                  required
-                />
+                <Input id="cardNumber" placeholder="**** **** **** 1234" />
               </div>
               <div className="flex space-x-4">
                 <div className="flex-1">
                   <Label htmlFor="expiryDate">Expiry Date</Label>
-                  <Input
-                    id="expiryDate"
-                    value={billingInfo.expiryDate}
-                    onChange={(e) => setBillingInfo({ ...billingInfo, expiryDate: e.target.value })}
-                    required
-                  />
+                  <Input id="expiryDate" placeholder="MM/YY" />
                 </div>
                 <div className="flex-1">
                   <Label htmlFor="cvv">CVV</Label>
-                  <Input
-                    id="cvv"
-                    value={billingInfo.cvv}
-                    onChange={(e) => setBillingInfo({ ...billingInfo, cvv: e.target.value })}
-                    required
-                  />
+                  <Input id="cvv" placeholder="123" />
                 </div>
               </div>
-              <Button type="submit">Update Billing Info</Button>
+              <Button>Update Billing Information</Button>
             </form>
           </CardContent>
         </Card>
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Notification Preferences</CardTitle>
+            <CardTitle>Invoices</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="emailNotifications">Email Notifications</Label>
-                <Switch
-                  id="emailNotifications"
-                  checked={notifications.email}
-                  onCheckedChange={(checked) => setNotifications({ ...notifications, email: checked })}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="pushNotifications">Push Notifications</Label>
-                <Switch
-                  id="pushNotifications"
-                  checked={notifications.push}
-                  onCheckedChange={(checked) => setNotifications({ ...notifications, push: checked })}
-                />
-              </div>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Invoice Number</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell>INV-001</TableCell>
+                  <TableCell>2023-05-01</TableCell>
+                  <TableCell>$99.99</TableCell>
+                  <TableCell>
+                    <Button variant="outline" size="sm">Download</Button>
+                  </TableCell>
+                </TableRow>
+                {/* Add more invoice rows as needed */}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
 
@@ -172,8 +142,8 @@ export default function Settings() {
             <CardTitle>Delete Account</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="mb-4">Permanently delete your Wring.co account. This action cannot be undone.</p>
-            <Button variant="destructive" onClick={handleDeleteAccount}>Delete Account</Button>
+            <p className="mb-4">Warning: This action cannot be undone. All your data will be permanently deleted.</p>
+            <Button variant="destructive" onClick={handleDeleteAccount}>Delete My Account</Button>
           </CardContent>
         </Card>
       </div>

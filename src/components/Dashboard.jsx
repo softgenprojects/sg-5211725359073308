@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ArrowUpRight, DollarSign, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Dashboard({ user, cloudSpendTrends }) {
   const [isLoading, setIsLoading] = useState(true);
   const [usageBreakdown, setUsageBreakdown] = useState([]);
-  const [selectedService, setSelectedService] = useState(null);
 
   useEffect(() => {
     const fetchUsageBreakdown = async () => {
@@ -19,7 +18,7 @@ export default function Dashboard({ user, cloudSpendTrends }) {
         const data = await response.json();
         setUsageBreakdown(data);
       } catch (error) {
-        console.error('Failed to fetch usage breakdown:', error);
+        console.error('Error fetching usage breakdown:', error);
       } finally {
         setIsLoading(false);
       }
@@ -28,9 +27,11 @@ export default function Dashboard({ user, cloudSpendTrends }) {
     fetchUsageBreakdown();
   }, []);
 
-  const handleServiceClick = (service) => {
-    setSelectedService(service === selectedService ? null : service);
-  };
+  if (!user) return null;
+
+  const totalSavings = user.savings * 6;
+  const savingsPercentage = 15; // This should be calculated based on actual data
+  const employeesEquivalent = Math.floor(totalSavings / 5000);
 
   return (
     <div className="container mx-auto p-6">
@@ -66,14 +67,14 @@ export default function Dashboard({ user, cloudSpendTrends }) {
             <CardTitle>Savings Overview</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold mb-2">${(user.savings * 6).toLocaleString()}</div>
+            <div className="text-2xl font-bold mb-2">${totalSavings.toLocaleString()}</div>
             <p className="text-muted-foreground mb-4">Total savings in the last 6 months</p>
             <div className="flex items-center text-green-500 mb-4">
               <ArrowUpRight className="mr-2" />
-              <span className="text-lg font-semibold">15% increase</span>
+              <span className="text-lg font-semibold">{savingsPercentage}% increase</span>
             </div>
             <p className="text-muted-foreground">
-              This is equivalent to hiring {Math.floor(user.savings / 5000)} new employees!
+              This is equivalent to hiring {employeesEquivalent} new employees!
             </p>
           </CardContent>
         </Card>
@@ -84,42 +85,20 @@ export default function Dashboard({ user, cloudSpendTrends }) {
           <CardTitle>Usage Breakdown</CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {Array(3).fill().map((_, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {isLoading ? (
+              Array(3).fill().map((_, index) => (
                 <Skeleton key={index} className="h-20 w-full" />
-              ))}
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                {usageBreakdown.map(({ service, cost }) => (
-                  <Button
-                    key={service}
-                    variant={selectedService === service ? "secondary" : "outline"}
-                    className="flex items-center justify-between p-4 h-auto"
-                    onClick={() => handleServiceClick(service)}
-                  >
-                    <span className="font-semibold">{service}</span>
-                    <span className="text-lg">${cost.toLocaleString()}</span>
-                  </Button>
-                ))}
-              </div>
-              {selectedService && (
-                <div className="mt-4 h-[200px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={cloudSpendTrends}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="spend" fill="#8884d8" />
-                    </BarChart>
-                  </ResponsiveContainer>
+              ))
+            ) : (
+              usageBreakdown.map(({ service, cost }) => (
+                <div key={service} className="flex items-center justify-between p-4 bg-secondary rounded-lg">
+                  <span className="font-semibold">{service}</span>
+                  <span className="text-lg">${cost.toLocaleString()}</span>
                 </div>
-              )}
-            </>
-          )}
+              ))
+            )}
+          </div>
         </CardContent>
       </Card>
 
