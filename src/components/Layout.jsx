@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import Link from 'next/link';
 import { Toaster } from '@/components/ui/toaster';
+import Notification from '@/components/Notification';
 
 export default function Layout({ children }) {
   return (
@@ -17,14 +18,14 @@ export default function Layout({ children }) {
             <Link href="/" className="hover:underline">Dashboard</Link>
             <Link href="/settings" className="hover:underline">Settings</Link>
             <Link href="/referral" className="hover:underline">Referral</Link>
-            <Link href="/register" className="hover:underline">Register</Link>
-            <Link href="/connect" className="hover:underline">Connect</Link>
+            <Link href="/founders-hub" className="hover:underline">Founder's Hub</Link>
           </div>
         </div>
       </nav>
       <main className="min-h-screen bg-background">
         {children}
       </main>
+      <Notification />
       <Toaster />
     </>
   );

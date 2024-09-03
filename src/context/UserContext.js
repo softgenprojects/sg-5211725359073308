@@ -1,0 +1,36 @@
+import { createContext, useState, useContext, useEffect } from 'react';
+
+const UserContext = createContext();
+
+export function UserProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch user data from API or local storage
+    const fetchUser = async () => {
+      try {
+        // Replace with actual API call
+        const response = await fetch('/api/user');
+        const userData = await response.json();
+        setUser(userData);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  return (
+    <UserContext.Provider value={{ user, setUser, loading }}>
+      {children}
+    </UserContext.Provider>
+  );
+}
+
+export function useUser() {
+  return useContext(UserContext);
+}
