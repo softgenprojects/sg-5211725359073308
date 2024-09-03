@@ -12,7 +12,7 @@ export default function Notification() {
       // Replace this with actual API call
       const mockNotifications = [
         { id: 1, type: 'payment', message: 'Your next payment is due in 3 days.' },
-        { id: 2, type: 'savings', message: 'You've saved $500 this month!' },
+        { id: 2, type: 'savings', message: 'You have saved $500 this month!' },
       ];
       setNotifications(mockNotifications);
     };

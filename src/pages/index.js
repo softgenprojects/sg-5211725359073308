@@ -1,9 +1,10 @@
+import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import Dashboard from '@/components/Dashboard';
-import { useState, useEffect } from 'react';
+import { useUser } from '@/context/UserContext';
 
 export default function Home() {
-  const [user, setUser] = useState(null);
+  const { user, loading } = useUser();
   const [cloudSpendTrends, setCloudSpendTrends] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,20 +12,12 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [userRes, trendsRes] = await Promise.all([
-          fetch('/api/user'),
-          fetch('/api/cloudSpendTrends')
-        ]);
-
-        if (!userRes.ok || !trendsRes.ok) {
-          throw new Error('Failed to fetch data');
+        const res = await fetch('/api/cloudSpendTrends');
+        if (!res.ok) {
+          throw new Error('Failed to fetch cloud spend trends');
         }
-
-        const userData = await userRes.json();
-        const trendsData = await trendsRes.json();
-
-        setUser(userData);
-        setCloudSpendTrends(trendsData);
+        const data = await res.json();
+        setCloudSpendTrends(data);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -32,10 +25,12 @@ export default function Home() {
       }
     };
 
-    fetchData();
-  }, []);
+    if (!loading) {
+      fetchData();
+    }
+  }, [loading]);
 
-  if (isLoading) {
+  if (loading || isLoading) {
     return <Layout><div className="container mx-auto p-6">Loading...</div></Layout>;
   }
 

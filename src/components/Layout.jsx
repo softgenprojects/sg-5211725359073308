@@ -1,9 +1,15 @@
 import Head from 'next/head';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { Toaster } from '@/components/ui/toaster';
 import Notification from '@/components/Notification';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 export default function Layout({ children }) {
+  const router = useRouter();
+
+  const isActive = (path) => router.pathname === path;
+
   return (
     <>
       <Head>
@@ -15,16 +21,28 @@ export default function Layout({ children }) {
         <div className="container mx-auto px-6 py-3 flex justify-between items-center">
           <Link href="/" className="text-xl font-bold">Wring.co</Link>
           <div className="space-x-4">
-            <Link href="/" className="hover:underline">Dashboard</Link>
-            <Link href="/settings" className="hover:underline">Settings</Link>
-            <Link href="/referral" className="hover:underline">Referral</Link>
-            <Link href="/founders-hub" className="hover:underline">Founder's Hub</Link>
+            {[
+              { href: '/', label: 'Dashboard' },
+              { href: '/settings', label: 'Settings' },
+              { href: '/referral', label: 'Referral' },
+              { href: '/founders-hub', label: "Founder's Hub" },
+            ].map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className={`hover:underline ${isActive(href) ? 'font-bold' : ''}`}
+              >
+                {label}
+              </Link>
+            ))}
           </div>
         </div>
       </nav>
-      <main className="min-h-screen bg-background">
-        {children}
-      </main>
+      <ErrorBoundary>
+        <main className="min-h-screen bg-background">
+          {children}
+        </main>
+      </ErrorBoundary>
       <Notification />
       <Toaster />
     </>

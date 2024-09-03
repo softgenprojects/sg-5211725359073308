@@ -5,35 +5,101 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function ManageApplications() {
   const [applications, setApplications] = useState([]);
   const [takeRate, setTakeRate] = useState(10);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Fetch applications data
     fetchApplications();
   }, []);
 
   const fetchApplications = async () => {
-    // Replace with actual API call
-    const mockApplications = [
-      { id: 1, name: 'Company A', status: 'Pending', savings: 5000 },
-      { id: 2, name: 'Company B', status: 'Approved', savings: 10000 },
-      { id: 3, name: 'Company C', status: 'Rejected', savings: 3000 },
-    ];
-    setApplications(mockApplications);
+    setIsLoading(true);
+    try {
+      // Replace with actual API call
+      const response = await fetch('/api/admin/applications');
+      if (!response.ok) {
+        throw new Error('Failed to fetch applications');
+      }
+      const data = await response.json();
+      setApplications(data);
+    } catch (err) {
+      setError(err.message);
+      toast({
+        title: 'Error',
+        description: 'Failed to load applications. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleStatusChange = (id, newStatus) => {
-    setApplications(applications.map(app => 
-      app.id === id ? { ...app, status: newStatus } : app
-    ));
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      // Replace with actual API call
+      const response = await fetch(`/api/admin/applications/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update application status');
+      }
+      setApplications(applications.map(app => 
+        app.id === id ? { ...app, status: newStatus } : app
+      ));
+      toast({
+        title: 'Status Updated',
+        description: `Application status changed to ${newStatus}`,
+      });
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update application status. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleTakeRateChange = (e) => {
-    setTakeRate(e.target.value);
+  const handleTakeRateChange = async (e) => {
+    const newTakeRate = e.target.value;
+    setTakeRate(newTakeRate);
+    try {
+      // Replace with actual API call
+      const response = await fetch('/api/admin/takeRate', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ takeRate: newTakeRate }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update take rate');
+      }
+      toast({
+        title: 'Take Rate Updated',
+        description: `New take rate set to ${newTakeRate}%`,
+      });
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update take rate. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
+
+  if (isLoading) {
+    return <Layout><div className="container mx-auto p-6">Loading...</div></Layout>;
+  }
+
+  if (error) {
+    return <Layout><div className="container mx-auto p-6">Error: {error}</div></Layout>;
+  }
 
   return (
     <Layout>
@@ -98,7 +164,9 @@ export default function ManageApplications() {
                 onChange={handleTakeRateChange}
                 className="w-20"
               />
-              <Button>Update Take Rate</Button>
+              <Button onClick={() => handleTakeRateChange({ target: { value: takeRate } })}>
+                Update Take Rate
+              </Button>
             </div>
           </CardContent>
         </Card>
