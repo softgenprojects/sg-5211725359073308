@@ -2,32 +2,35 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { ArrowUpRight, DollarSign, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Dashboard({ user, cloudSpendTrends }) {
   const [isLoading, setIsLoading] = useState(true);
   const [usageBreakdown, setUsageBreakdown] = useState([]);
+  const [selectedService, setSelectedService] = useState(null);
 
   useEffect(() => {
-    // Simulate API call for usage breakdown
     const fetchUsageBreakdown = async () => {
       setIsLoading(true);
-      // Simulating API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setUsageBreakdown([
-        { service: 'EC2', cost: Math.floor(Math.random() * 1000) },
-        { service: 'RDS', cost: Math.floor(Math.random() * 1000) },
-        { service: 'S3', cost: Math.floor(Math.random() * 1000) },
-      ]);
-      setIsLoading(false);
+      try {
+        const response = await fetch('/api/usageBreakdown');
+        const data = await response.json();
+        setUsageBreakdown(data);
+      } catch (error) {
+        console.error('Failed to fetch usage breakdown:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchUsageBreakdown();
   }, []);
 
-  if (!user) return null;
+  const handleServiceClick = (service) => {
+    setSelectedService(service === selectedService ? null : service);
+  };
 
   return (
     <div className="container mx-auto p-6">
@@ -81,20 +84,42 @@ export default function Dashboard({ user, cloudSpendTrends }) {
           <CardTitle>Usage Breakdown</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {isLoading ? (
-              Array(3).fill().map((_, index) => (
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {Array(3).fill().map((_, index) => (
                 <Skeleton key={index} className="h-20 w-full" />
-              ))
-            ) : (
-              usageBreakdown.map(({ service, cost }) => (
-                <div key={service} className="flex items-center justify-between p-4 bg-secondary rounded-lg">
-                  <span className="font-semibold">{service}</span>
-                  <span className="text-lg">${cost.toLocaleString()}</span>
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                {usageBreakdown.map(({ service, cost }) => (
+                  <Button
+                    key={service}
+                    variant={selectedService === service ? "secondary" : "outline"}
+                    className="flex items-center justify-between p-4 h-auto"
+                    onClick={() => handleServiceClick(service)}
+                  >
+                    <span className="font-semibold">{service}</span>
+                    <span className="text-lg">${cost.toLocaleString()}</span>
+                  </Button>
+                ))}
+              </div>
+              {selectedService && (
+                <div className="mt-4 h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={cloudSpendTrends}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="spend" fill="#8884d8" />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
-              ))
-            )}
-          </div>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
 

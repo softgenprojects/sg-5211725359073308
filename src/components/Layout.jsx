@@ -17,6 +17,8 @@ export default function Layout({ children }) {
             <Link href="/" className="hover:underline">Dashboard</Link>
             <Link href="/settings" className="hover:underline">Settings</Link>
             <Link href="/referral" className="hover:underline">Referral</Link>
+            <Link href="/register" className="hover:underline">Register</Link>
+            <Link href="/connect" className="hover:underline">Connect</Link>
           </div>
         </div>
       </nav>
