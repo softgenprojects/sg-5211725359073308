@@ -4,27 +4,59 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from '@/components/ui/use-toast';
+import TeamMemberModal from '@/components/TeamMemberModal';
+import AWSConnectModal from '@/components/AWSConnectModal';
+import DeleteAccountModal from '@/components/DeleteAccountModal';
 
 export default function Settings() {
   const [teamMembers, setTeamMembers] = useState([
     { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Admin' },
     { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'Member' },
   ]);
+  const [isTeamMemberModalOpen, setIsTeamMemberModalOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState(null);
+  const [isAWSConnectModalOpen, setIsAWSConnectModalOpen] = useState(false);
+  const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] = useState(false);
+  const [companyInfo, setCompanyInfo] = useState({
+    name: '',
+    address: '',
+    taxId: '',
+  });
 
-  const [integrations, setIntegrations] = useState([
-    { id: 1, name: 'Slack', connected: true },
-    { id: 2, name: 'GitHub', connected: false },
-    { id: 3, name: 'Jira', connected: false },
-  ]);
+  const handleEditMember = (member) => {
+    setEditingMember(member);
+    setIsTeamMemberModalOpen(true);
+  };
 
-  const handleDeleteAccount = () => {
-    // Implement account deletion logic here
+  const handleAddMember = () => {
+    setEditingMember(null);
+    setIsTeamMemberModalOpen(true);
+  };
+
+  const handleSaveMember = (member) => {
+    if (member.id) {
+      setTeamMembers(teamMembers.map(m => m.id === member.id ? member : m));
+    } else {
+      setTeamMembers([...teamMembers, { ...member, id: Date.now() }]);
+    }
+    setIsTeamMemberModalOpen(false);
     toast({
-      title: "Account Deletion Requested",
-      description: "Your account deletion request has been submitted. We'll process it within 24 hours.",
+      title: member.id ? "Team Member Updated" : "Team Member Added",
+      description: `${member.name} has been ${member.id ? 'updated' : 'added'} successfully.`,
+    });
+  };
+
+  const handleCompanyInfoChange = (e) => {
+    setCompanyInfo({ ...companyInfo, [e.target.name]: e.target.value });
+  };
+
+  const handleSaveCompanyInfo = () => {
+    // Implement API call to save company info
+    toast({
+      title: "Company Information Saved",
+      description: "Your company information has been updated successfully.",
     });
   };
 
@@ -54,86 +86,48 @@ export default function Settings() {
                     <TableCell>{member.email}</TableCell>
                     <TableCell>{member.role}</TableCell>
                     <TableCell>
-                      <Button variant="outline" size="sm">Edit</Button>
+                      <Button variant="outline" size="sm" onClick={() => handleEditMember(member)}>Edit</Button>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-            <Button className="mt-4">Add Team Member</Button>
+            <Button className="mt-4" onClick={handleAddMember}>Add Team Member</Button>
           </CardContent>
         </Card>
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Integrations</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {integrations.map((integration) => (
-              <div key={integration.id} className="flex items-center justify-between py-2">
-                <span>{integration.name}</span>
-                <Switch
-                  checked={integration.connected}
-                  onCheckedChange={() => {
-                    // Implement integration toggle logic here
-                  }}
-                />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Billing Information</CardTitle>
+            <CardTitle>Company Information</CardTitle>
           </CardHeader>
           <CardContent>
             <form className="space-y-4">
               <div>
-                <Label htmlFor="cardNumber">Card Number</Label>
-                <Input id="cardNumber" placeholder="**** **** **** 1234" />
+                <Label htmlFor="companyName">Company Name</Label>
+                <Input id="companyName" name="name" value={companyInfo.name} onChange={handleCompanyInfoChange} />
               </div>
-              <div className="flex space-x-4">
-                <div className="flex-1">
-                  <Label htmlFor="expiryDate">Expiry Date</Label>
-                  <Input id="expiryDate" placeholder="MM/YY" />
-                </div>
-                <div className="flex-1">
-                  <Label htmlFor="cvv">CVV</Label>
-                  <Input id="cvv" placeholder="123" />
-                </div>
+              <div>
+                <Label htmlFor="companyAddress">Company Address</Label>
+                <Input id="companyAddress" name="address" value={companyInfo.address} onChange={handleCompanyInfoChange} />
               </div>
-              <Button>Update Billing Information</Button>
+              <div>
+                <Label htmlFor="taxId">Tax ID</Label>
+                <Input id="taxId" name="taxId" value={companyInfo.taxId} onChange={handleCompanyInfoChange} />
+              </div>
+              <Button onClick={handleSaveCompanyInfo}>Save Company Information</Button>
             </form>
           </CardContent>
         </Card>
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Invoices</CardTitle>
+            <CardTitle>Connect Cloud Account</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invoice Number</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell>INV-001</TableCell>
-                  <TableCell>2023-05-01</TableCell>
-                  <TableCell>$99.99</TableCell>
-                  <TableCell>
-                    <Button variant="outline" size="sm">Download</Button>
-                  </TableCell>
-                </TableRow>
-                {/* Add more invoice rows as needed */}
-              </TableBody>
-            </Table>
+            <Button onClick={() => setIsAWSConnectModalOpen(true)} className="flex items-center">
+              <img src="/api/placeholder/32/32" alt="AWS Logo" className="mr-2" />
+              Connect AWS Account
+            </Button>
           </CardContent>
         </Card>
 
@@ -143,10 +137,27 @@ export default function Settings() {
           </CardHeader>
           <CardContent>
             <p className="mb-4">Warning: This action cannot be undone. All your data will be permanently deleted.</p>
-            <Button variant="destructive" onClick={handleDeleteAccount}>Delete My Account</Button>
+            <Button variant="destructive" onClick={() => setIsDeleteAccountModalOpen(true)}>Delete My Account</Button>
           </CardContent>
         </Card>
       </div>
+
+      <TeamMemberModal
+        isOpen={isTeamMemberModalOpen}
+        onClose={() => setIsTeamMemberModalOpen(false)}
+        onSave={handleSaveMember}
+        member={editingMember}
+      />
+
+      <AWSConnectModal
+        isOpen={isAWSConnectModalOpen}
+        onClose={() => setIsAWSConnectModalOpen(false)}
+      />
+
+      <DeleteAccountModal
+        isOpen={isDeleteAccountModalOpen}
+        onClose={() => setIsDeleteAccountModalOpen(false)}
+      />
     </Layout>
   );
 }
